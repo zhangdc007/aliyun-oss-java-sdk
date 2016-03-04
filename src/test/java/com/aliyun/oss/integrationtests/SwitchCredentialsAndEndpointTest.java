@@ -19,18 +19,7 @@
 
 package com.aliyun.oss.integrationtests;
 
-import static com.aliyun.oss.integrationtests.TestConfig.DEFAULT_ACCESS_ID_1;
-import static com.aliyun.oss.integrationtests.TestConfig.DEFAULT_ACCESS_ID_2;
-import static com.aliyun.oss.integrationtests.TestConfig.DEFAULT_ACCESS_KEY_1;
-import static com.aliyun.oss.integrationtests.TestConfig.DEFAULT_ACCESS_KEY_2;
-import static com.aliyun.oss.integrationtests.TestConfig.DEFAULT_LOCATION;
-import static com.aliyun.oss.integrationtests.TestConfig.INVALID_ACCESS_ID;
-import static com.aliyun.oss.integrationtests.TestConfig.INVALID_ACCESS_KEY;
-import static com.aliyun.oss.integrationtests.TestConfig.INVALID_ENDPOINT;
-import static com.aliyun.oss.integrationtests.TestConfig.SECOND_ACCESS_ID;
-import static com.aliyun.oss.integrationtests.TestConfig.SECOND_ACCESS_KEY;
-import static com.aliyun.oss.integrationtests.TestConfig.SECOND_ENDPOINT;
-import static com.aliyun.oss.integrationtests.TestConfig.SECOND_LOCATION;
+import static com.aliyun.oss.integrationtests.TestConfig.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -53,107 +42,36 @@ public class SwitchCredentialsAndEndpointTest extends TestBase {
     private static final int loopTimes = 100;
     private static final int switchInterval = 50; // unit in milliseconds
 
-    @Ignore
-    public void testSwitchValidCredentialsAndEndpoint() {
-        CredentialsProvider credsProvider = defaultClient.getCredentialsProvider();
-        Credentials defaultCreds = credsProvider.getCredentials();
-        assertEquals(DEFAULT_ACCESS_ID_1, defaultCreds.getAccessKeyId());
-        assertEquals(DEFAULT_ACCESS_KEY_1, defaultCreds.getSecretAccessKey());
-
-        // Verify default credentials under default endpoint
-        try {
-            String loc = defaultClient.getBucketLocation(bucketName);
-            assertEquals(DEFAULT_LOCATION, loc);
-        } catch (OSSException ex) {
-            fail("Unable to get bucket location with default credentials.");
-        }
-        
-        // Switch to another default credentials that belongs to the same user acount.
-        Credentials defaultCreds2 = new DefaultCredentials(DEFAULT_ACCESS_ID_2, DEFAULT_ACCESS_KEY_2);
-        defaultClient.switchCredentials(defaultCreds2);
-        defaultCreds2 = credsProvider.getCredentials();
-        assertEquals(DEFAULT_ACCESS_ID_2, defaultCreds2.getAccessKeyId());
-        assertEquals(DEFAULT_ACCESS_KEY_2, defaultCreds2.getSecretAccessKey());
-
-        // Verify another default credentials under default endpoint
-        try {
-            String loc = defaultClient.getBucketLocation(bucketName);
-            assertEquals(DEFAULT_LOCATION, loc);
-        } catch (OSSException ex) {
-            restoreDefaultCredentials();
-            fail("Unable to get bucket location with another default credentials.");
-        }
-        
-        // Switch to second credentials that belongs to another user acount,
-        // Note that the default credentials are only valid under default endpoint 
-        // and the second credentials are only valid under second endpoint.
-        Credentials secondCreds = new DefaultCredentials(SECOND_ACCESS_ID, SECOND_ACCESS_KEY);
-        defaultClient.switchCredentials(secondCreds);
-        secondCreds = credsProvider.getCredentials();
-        assertEquals(SECOND_ACCESS_ID, secondCreds.getAccessKeyId());
-        assertEquals(SECOND_ACCESS_KEY, secondCreds.getSecretAccessKey());
-        
-        // Verify second credentials under default endpoint
-        try {
-            defaultClient.getBucketLocation(bucketName);
-            fail("Should not be able to get bucket location with second credentials.");
-        } catch (OSSException ex) {
-            assertEquals(OSSErrorCode.INVALID_ACCESS_KEY_ID, ex.getErrorCode());
-        }
-        
-        // Switch to second endpoint
-        defaultClient.setEndpoint(SECOND_ENDPOINT);
-        
-        // Verify second credentials under second endpoint
-        try {
-            assertEquals(SECOND_ENDPOINT, defaultClient.getEndpoint().toString());
-            String loc = defaultClient.getBucketLocation(bucketName);
-            assertEquals(SECOND_LOCATION, loc);
-            
-            // After switching both credentials and endpoint, the default OSSClient is the same
-            // as the second OSSClient actually.
-            assertEquals(SECOND_ENDPOINT, secondClient.getEndpoint().toString());
-            loc = secondClient.getBucketLocation(bucketName);
-            assertEquals(SECOND_LOCATION, loc);
-        } catch (OSSException ex) {
-            fail("Unable to create bucket with second credentials.");
-        } finally {
-            restoreDefaultCredentials();
-            restoreDefaultEndpoint();
-        }
-    }
-    
     @Test
     public void testSwitchInvalidCredentialsAndEndpoint() {
-        CredentialsProvider credsProvider = defaultClient.getCredentialsProvider();
+        CredentialsProvider credsProvider = client.getCredentialsProvider();
         Credentials defaultCreds = credsProvider.getCredentials();
-        assertEquals(DEFAULT_ACCESS_ID_1, defaultCreds.getAccessKeyId());
-        assertEquals(DEFAULT_ACCESS_KEY_1, defaultCreds.getSecretAccessKey());
+        assertEquals(OSS_TEST_ACCESS_KEY_ID, defaultCreds.getAccessKeyId());
+        assertEquals(OSS_TEST_ACCESS_KEY_SECRET, defaultCreds.getSecretAccessKey());
         
         // Switch to invalid credentials
-        Credentials invalidCreds = new DefaultCredentials(INVALID_ACCESS_ID, INVALID_ACCESS_KEY);
-        defaultClient.switchCredentials(invalidCreds);
+        Credentials invalidCreds = new DefaultCredentials("invalid-access-id", "invalid-access-key");
+        client.switchCredentials(invalidCreds);
         
         // Verify invalid credentials under default endpoint
         try {
-            defaultClient.getBucketLocation(bucketName);
+            client.getBucketLocation(bucketName);
             fail("Should not be able to get bucket location with invalid credentials.");
         } catch (OSSException ex) {
             assertEquals(OSSErrorCode.INVALID_ACCESS_KEY_ID, ex.getErrorCode());
         }
         
         // Switch to valid endpoint
-        defaultClient.setEndpoint(INVALID_ENDPOINT);
+        client.setEndpoint("invalid-endpoint");
         
         // Verify second credentials under invalid endpoint
         try {
-            defaultClient.getBucketLocation(bucketName);
+            client.getBucketLocation(bucketName);
             fail("Should not be able to get bucket location with second credentials.");
         } catch (ClientException ex) {
             assertEquals(ClientErrorCode.UNKNOWN_HOST, ex.getErrorCode());
         } finally {
-            restoreDefaultCredentials();
-            restoreDefaultEndpoint();
+            restoreClient();
         }
     }
     
@@ -186,18 +104,18 @@ public class SwitchCredentialsAndEndpointTest extends TestBase {
                         } catch (InterruptedException e) { }
                     }
                     
-                    CredentialsProvider credsProvider = defaultClient.getCredentialsProvider();
+                    CredentialsProvider credsProvider = client.getCredentialsProvider();
                     Credentials currentCreds = credsProvider.getCredentials();
                     
                     try {
-                        String loc = defaultClient.getBucketLocation(bucketName);
-                        assertEquals(DEFAULT_LOCATION, loc);    
-                        assertEquals(DEFAULT_ACCESS_ID_1, currentCreds.getAccessKeyId());
-                        assertEquals(DEFAULT_ACCESS_KEY_1, currentCreds.getSecretAccessKey());
+                        String loc = client.getBucketLocation(bucketName);
+                        assertEquals(OSS_TEST_REGION, loc);
+                        assertEquals(OSS_TEST_ACCESS_KEY_ID, currentCreds.getAccessKeyId());
+                        assertEquals(OSS_TEST_ACCESS_KEY_SECRET, currentCreds.getSecretAccessKey());
                     } catch (OSSException ex) {
                         assertEquals(OSSErrorCode.INVALID_ACCESS_KEY_ID, ex.getErrorCode());
-                        assertEquals(SECOND_ACCESS_ID, currentCreds.getAccessKeyId());
-                        assertEquals(SECOND_ACCESS_KEY, currentCreds.getSecretAccessKey());
+                        assertEquals(OSS_TEST_ACCESS_KEY_ID, currentCreds.getAccessKeyId());
+                        assertEquals(OSS_TEST_ACCESS_KEY_SECRET, currentCreds.getSecretAccessKey());
                     }
                     
                     // Notify credentials switching
@@ -217,12 +135,13 @@ public class SwitchCredentialsAndEndpointTest extends TestBase {
                 int l = 0;
                 boolean firstSwitch = false;
                 do {
-                    Credentials secondCreds = new DefaultCredentials(SECOND_ACCESS_ID, SECOND_ACCESS_KEY);
-                    defaultClient.switchCredentials(secondCreds);
-                    CredentialsProvider credsProvider = defaultClient.getCredentialsProvider();
+                    Credentials secondCreds =
+                            new DefaultCredentials(OSS_TEST_ACCESS_KEY_ID, OSS_TEST_ACCESS_KEY_SECRET);
+                    client.switchCredentials(secondCreds);
+                    CredentialsProvider credsProvider = client.getCredentialsProvider();
                     secondCreds = credsProvider.getCredentials();
-                    assertEquals(SECOND_ACCESS_ID, secondCreds.getAccessKeyId());
-                    assertEquals(SECOND_ACCESS_KEY, secondCreds.getSecretAccessKey());
+                    assertEquals(OSS_TEST_ACCESS_KEY_ID, secondCreds.getAccessKeyId());
+                    assertEquals(OSS_TEST_ACCESS_KEY_SECRET, secondCreds.getSecretAccessKey());
 
                     if (!firstSwitch) {
                         synchronized (ensureSwitchFirst) {
@@ -257,7 +176,7 @@ public class SwitchCredentialsAndEndpointTest extends TestBase {
         verifyThread.join();
         switchThread.join();
         
-        restoreDefaultCredentials();
+        restoreClient();
     }
     
     @Test
@@ -289,30 +208,29 @@ public class SwitchCredentialsAndEndpointTest extends TestBase {
                         } catch (InterruptedException e) { }
                     }
                     
-                    CredentialsProvider credsProvider = defaultClient.getCredentialsProvider();
+                    CredentialsProvider credsProvider = client.getCredentialsProvider();
                     Credentials currentCreds = credsProvider.getCredentials();
                     
-                    String loc = defaultClient.getBucketLocation(bucketName);
-                    assertEquals(SECOND_LOCATION, loc);    
-                    assertEquals(SECOND_ACCESS_ID, currentCreds.getAccessKeyId());
-                    assertEquals(SECOND_ACCESS_KEY, currentCreds.getSecretAccessKey());
+                    String loc = client.getBucketLocation(bucketName);
+                    assertEquals(OSS_TEST_REGION, loc);
+                    assertEquals(OSS_TEST_ACCESS_KEY_ID, currentCreds.getAccessKeyId());
+                    assertEquals(OSS_TEST_ACCESS_KEY_SECRET, currentCreds.getSecretAccessKey());
                     
                     /*
                      * Since the default OSSClient is the same as the second OSSClient, let's
                      * do a simple verification. 
                      */
-                    String secondLoc = secondClient.getBucketLocation(bucketName);
+                    String secondLoc = client.getBucketLocation(bucketName);
                     assertEquals(loc, secondLoc);
-                    assertEquals(SECOND_LOCATION, secondLoc);
-                    CredentialsProvider secondCredsProvider = secondClient.getCredentialsProvider();
+                    assertEquals(OSS_TEST_REGION, secondLoc);
+                    CredentialsProvider secondCredsProvider = client.getCredentialsProvider();
                     Credentials secondCreds = secondCredsProvider.getCredentials();
-                    assertEquals(SECOND_ACCESS_ID, secondCreds.getAccessKeyId());
-                    assertEquals(SECOND_ACCESS_KEY, secondCreds.getSecretAccessKey());
+                    assertEquals(OSS_TEST_ACCESS_KEY_ID, secondCreds.getAccessKeyId());
+                    assertEquals(OSS_TEST_ACCESS_KEY_SECRET, secondCreds.getSecretAccessKey());
                     
                     // Notify endpoint switching
                     synchronized (switchSynchronizer) {
-                        restoreDefaultCredentials();
-                        restoreDefaultEndpoint();
+                        restoreClient();
                         switchSynchronizer.notify();
                     }
                     
@@ -332,9 +250,10 @@ public class SwitchCredentialsAndEndpointTest extends TestBase {
                      * Switch both credentials and endpoint, now the default OSSClient is the same as 
                      * the second OSSClient actually.
                      */
-                    Credentials secondCreds = new DefaultCredentials(SECOND_ACCESS_ID, SECOND_ACCESS_KEY);
-                    defaultClient.switchCredentials(secondCreds);
-                    defaultClient.setEndpoint(SECOND_ENDPOINT);
+                    Credentials secondCreds =
+                            new DefaultCredentials(OSS_TEST_ACCESS_KEY_ID, OSS_TEST_ACCESS_KEY_SECRET);
+                    client.switchCredentials(secondCreds);
+                    client.setEndpoint(OSS_TEST_ENDPOINT);
 
                     if (!firstSwitch) {
                         synchronized (ensureSwitchFirst) {
@@ -369,8 +288,7 @@ public class SwitchCredentialsAndEndpointTest extends TestBase {
         verifyThread.join();
         switchThread.join();
         
-        restoreDefaultCredentials();
-        restoreDefaultEndpoint();
+        restoreClient();
     }
     
 }

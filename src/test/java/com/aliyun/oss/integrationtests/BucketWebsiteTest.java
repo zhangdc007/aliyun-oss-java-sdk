@@ -37,63 +37,63 @@ public class BucketWebsiteTest extends TestBase {
 
     @Test
     public void testNormalSetBucketWebsite() {
-        final String bucketName = "normal-set-bucket-website";
+        final String bucketName = getBucketName("normal");
         final String indexDocument = "index.html";
         final String errorDocument = "error.html";
         
         try {
-            secondClient.createBucket(bucketName);
+            client.createBucket(bucketName);
             
             // Set both index document and error document
             SetBucketWebsiteRequest request = new SetBucketWebsiteRequest(bucketName);
             request.setIndexDocument(indexDocument);
             request.setErrorDocument(errorDocument);
-            secondClient.setBucketWebsite(request);
+            client.setBucketWebsite(request);
             
             waitForCacheExpiration(5);
             
-            BucketWebsiteResult result = secondClient.getBucketWebsite(bucketName);
+            BucketWebsiteResult result = client.getBucketWebsite(bucketName);
             Assert.assertEquals(indexDocument, result.getIndexDocument());
             Assert.assertEquals(errorDocument, result.getErrorDocument());
             
-            secondClient.deleteBucketWebsite(bucketName);
+            client.deleteBucketWebsite(bucketName);
             
             // Set index document only
             request = new SetBucketWebsiteRequest(bucketName);
             request.setIndexDocument(indexDocument);
             request.setErrorDocument(null);
-            secondClient.setBucketWebsite(request);
+            client.setBucketWebsite(request);
             
             waitForCacheExpiration(5);
             
-            result = secondClient.getBucketWebsite(bucketName);
+            result = client.getBucketWebsite(bucketName);
             Assert.assertEquals(indexDocument, result.getIndexDocument());
             Assert.assertTrue(result.getErrorDocument() == null);
             
-            secondClient.deleteBucketWebsite(bucketName);
+            client.deleteBucketWebsite(bucketName);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         } finally {
-            secondClient.deleteBucket(bucketName);
+            client.deleteBucket(bucketName);
         }
     }
     
     @Test
     public void testUnormalSetBucketWebsite() {
-        final String bucketName = "unormal-set-bucket-website";
+        final String bucketName = getBucketName("unormal");
         final String indexDocument = "index.html";
         final String errorDocument = "error.html";
         
         try {
-            secondClient.createBucket(bucketName);
+            client.createBucket(bucketName);
             
             // Set non-existent bucket 
-            final String nonexistentBucket = "nonexistent-bucket";            
+            final String nonexistentBucket = getBucketName("nonexistent-bucket");
             try {                
                 SetBucketWebsiteRequest request = new SetBucketWebsiteRequest(nonexistentBucket);
                 request.setIndexDocument(indexDocument);
                 request.setErrorDocument(errorDocument);
-                secondClient.setBucketWebsite(request);
+                client.setBucketWebsite(request);
                 
                 Assert.fail("Set bucket website should not be successful");
             } catch (OSSException e) {
@@ -106,23 +106,23 @@ public class BucketWebsiteTest extends TestBase {
                 SetBucketWebsiteRequest request = new SetBucketWebsiteRequest(nonexistentBucket);
                 request.setIndexDocument(null);
                 request.setErrorDocument(errorDocument);
-                secondClient.setBucketWebsite(request);
+                client.setBucketWebsite(request);
                 
                 Assert.fail("Set bucket website should not be successful");
             } catch (Exception e) {
                 Assert.assertTrue(e instanceof NullPointerException);
             }
         } finally {
-            secondClient.deleteBucket(bucketName);
+            client.deleteBucket(bucketName);
         }
     }
     
     @Test
     public void testUnormalGetBucketWebsite() {
         // Get non-existent bucket
-        final String nonexistentBucket = "unormal-get-bucket-website";
+        final String nonexistentBucket = getBucketName("non-exist");
         try {
-            secondClient.getBucketWebsite(nonexistentBucket);
+            client.getBucketWebsite(nonexistentBucket);
             Assert.fail("Get bucket website should not be successful");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.NO_SUCH_BUCKET, e.getErrorCode());
@@ -132,7 +132,7 @@ public class BucketWebsiteTest extends TestBase {
         // Get bucket without ownership
         final String bucketWithoutOwnership = "oss";
         try {
-            secondClient.getBucketLogging(bucketWithoutOwnership);
+            client.getBucketLogging(bucketWithoutOwnership);
             Assert.fail("Get bucket website should not be successful");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.ACCESS_DENIED, e.getErrorCode());
@@ -140,26 +140,27 @@ public class BucketWebsiteTest extends TestBase {
         }
         
         // Get bucket without setting website configuration
-        final String bucketWithoutWebsiteConfiguration = "bucket-without-website-configuration";
+        final String bucketWithoutWebsiteConfiguration = 
+                getBucketName("bucket-without-website-configuration");
         try {
-            secondClient.createBucket(bucketWithoutWebsiteConfiguration);
+            client.createBucket(bucketWithoutWebsiteConfiguration);
             
-            secondClient.getBucketWebsite(bucketWithoutWebsiteConfiguration);
+            client.getBucketWebsite(bucketWithoutWebsiteConfiguration);
             Assert.fail("Get bucket website should not be successful");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.NO_SUCH_WEBSITE_CONFIGURATION, e.getErrorCode());
             Assert.assertTrue(e.getMessage().startsWith(NO_SUCH_WEBSITE_CONFIGURATION_ERR));
         } finally {
-            secondClient.deleteBucket(bucketWithoutWebsiteConfiguration);
+            client.deleteBucket(bucketWithoutWebsiteConfiguration);
         }
     }
     
     @Test
     public void testUnormalDeleteBucketWebsite() {
         // Delete non-existent bucket
-        final String nonexistentBucket = "unormal-delete-bucket-website";
+        final String nonexistentBucket = getBucketName("non-exist");
         try {
-            secondClient.deleteBucketWebsite(nonexistentBucket);
+            client.deleteBucketWebsite(nonexistentBucket);
             Assert.fail("Delete bucket website should not be successful");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.NO_SUCH_BUCKET, e.getErrorCode());
@@ -169,7 +170,7 @@ public class BucketWebsiteTest extends TestBase {
         // Delete bucket without ownership
         final String bucketWithoutOwnership = "oss";
         try {
-            secondClient.deleteBucketWebsite(bucketWithoutOwnership);
+            client.deleteBucketWebsite(bucketWithoutOwnership);
             Assert.fail("Delete bucket website should not be successful");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.ACCESS_DENIED, e.getErrorCode());
@@ -177,14 +178,15 @@ public class BucketWebsiteTest extends TestBase {
         }
         
         // Delete bucket without setting website configuration
-        final String bucketWithoutWebsiteConfiguration = "bucket-without-website-configuration";
+        final String bucketWithoutWebsiteConfiguration =
+                getBucketName("bucket-without-website-configuration");
         try {
-            secondClient.createBucket(bucketWithoutWebsiteConfiguration);
-            secondClient.deleteBucketWebsite(bucketWithoutWebsiteConfiguration);
+            client.createBucket(bucketWithoutWebsiteConfiguration);
+            client.deleteBucketWebsite(bucketWithoutWebsiteConfiguration);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         } finally {
-            secondClient.deleteBucket(bucketWithoutWebsiteConfiguration);
+            client.deleteBucket(bucketWithoutWebsiteConfiguration);
         }
     }
 }

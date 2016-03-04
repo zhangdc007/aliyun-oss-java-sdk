@@ -19,110 +19,68 @@
 
 package com.aliyun.oss.integrationtests;
 
-import static com.aliyun.oss.integrationtests.TestConfig.BUCKET_NAME_PREFIX;
-import static com.aliyun.oss.integrationtests.TestConfig.DEFAULT_ACCESS_ID_1;
-import static com.aliyun.oss.integrationtests.TestConfig.DEFAULT_ACCESS_KEY_1;
-import static com.aliyun.oss.integrationtests.TestConfig.DEFAULT_ENDPOINT;
-import static com.aliyun.oss.integrationtests.TestConfig.SECOND_ACCESS_ID;
-import static com.aliyun.oss.integrationtests.TestConfig.SECOND_ACCESS_KEY;
-import static com.aliyun.oss.integrationtests.TestConfig.SECOND_ENDPOINT;
-import static com.aliyun.oss.integrationtests.TestUtils.waitForCacheExpiration;
-import static com.aliyun.oss.model.DeleteObjectsRequest.DELETE_OBJECTS_ONETIME_LIMIT;
+import com.aliyun.oss.OSSClient;
+import com.aliyun.oss.common.utils.HttpUtil;
+import com.aliyun.oss.model.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-
-import com.aliyun.oss.ClientConfiguration;
-import com.aliyun.oss.OSSClient;
-import com.aliyun.oss.common.auth.Credentials;
-import com.aliyun.oss.common.auth.DefaultCredentialProvider;
-import com.aliyun.oss.common.auth.DefaultCredentials;
-import com.aliyun.oss.common.utils.HttpUtil;
-import com.aliyun.oss.model.AbortMultipartUploadRequest;
-import com.aliyun.oss.model.Bucket;
-import com.aliyun.oss.model.BucketList;
-import com.aliyun.oss.model.DeleteObjectsRequest;
-import com.aliyun.oss.model.ListBucketsRequest;
-import com.aliyun.oss.model.ListMultipartUploadsRequest;
-import com.aliyun.oss.model.ListObjectsRequest;
-import com.aliyun.oss.model.MultipartUpload;
-import com.aliyun.oss.model.MultipartUploadListing;
-import com.aliyun.oss.model.OSSObjectSummary;
-import com.aliyun.oss.model.ObjectListing;
+import static com.aliyun.oss.integrationtests.TestConfig.*;
+import static com.aliyun.oss.model.DeleteObjectsRequest.DELETE_OBJECTS_ONETIME_LIMIT;
 
 public class TestBase {
-    
+
     protected static String bucketName;
-    
-    protected static OSSClient defaultClient;
-    protected static OSSClient secondClient;
-    
-    private static final Credentials defaultCreds = 
-            new DefaultCredentials(DEFAULT_ACCESS_ID_1, DEFAULT_ACCESS_KEY_1);
-    private static final Credentials secondCreds = 
-            new DefaultCredentials(SECOND_ACCESS_ID, SECOND_ACCESS_KEY);
-    
+    protected static OSSClient client;
+
     protected static final String DEFAULT_ENCODING_TYPE = "url";
     protected static final String APPENDABLE_OBJECT_TYPE = "Appendable";
-    protected static final int LIST_PART_MAX_RETURNS = 1000;
-    
+
     @BeforeClass
     public static void oneTimeSetUp() {
-        cleanUpAllBuckets(getDefaultClient(), BUCKET_NAME_PREFIX);
-        cleanUpAllBuckets(getSecondClient(), BUCKET_NAME_PREFIX);
-    }
-    
-    @Before
-    public void setUp() throws Exception {
-        bucketName = createBucket();
+        int uniq = 100000 + new Random().nextInt(10000);
+        bucketName = OSS_TEST_BUCKET + uniq;
+        bucketName = "java-sdk-test102240";
+        client = new OSSClient(
+                OSS_TEST_ENDPOINT, OSS_TEST_ACCESS_KEY_ID, OSS_TEST_ACCESS_KEY_SECRET);
+        client.createBucket(bucketName);
     }
 
-    @After
-    public void tearDown() throws Exception {
-        deleteBucket(bucketName);
-        cleanUp();
+    @AfterClass
+    public static void oneTimeCleanUp() {
+        tryDeleteBucket(bucketName);
     }
-    
-    public static OSSClient getDefaultClient() {
-        if (defaultClient == null) {
-            defaultClient = new OSSClient(DEFAULT_ENDPOINT, 
-                    new DefaultCredentialProvider(defaultCreds), 
-                    new ClientConfiguration().setSupportCname(false).setSLDEnabled(true));
+
+    protected static String getBucketName(String name)
+    {
+        return bucketName + "-" + name;
+    }
+
+    protected static void tryDeleteBucket(String name)
+    {
+        try {
+            client.deleteBucket(name);
+        } catch (Exception e) {
+            // print log
+            try {
+                abortAllMultipartUploads(client, bucketName);
+                deleteBucketWithObjects(client, bucketName);
+            } catch (Exception ee) {
+                // print log
+            }
         }
-        return defaultClient;
     }
-    
-    public static OSSClient getSecondClient() {
-        if (secondClient == null) {
-            secondClient = new OSSClient(SECOND_ENDPOINT, 
-                    new DefaultCredentialProvider(secondCreds),
-                    new ClientConfiguration().setSupportCname(false).setSLDEnabled(true));
-        }
-        return secondClient;
+
+    protected static void restoreClient()
+    {
+        client = new OSSClient(
+                OSS_TEST_ENDPOINT, OSS_TEST_ACCESS_KEY_ID, OSS_TEST_ACCESS_KEY_SECRET);
     }
-    
-    public static String createBucket() {
-        long ticks = new Date().getTime() / 1000 + new Random().nextInt(5000);
-        String bucketName = BUCKET_NAME_PREFIX + ticks;
-        getDefaultClient().createBucket(bucketName);
-        getSecondClient().createBucket(bucketName);
-        waitForCacheExpiration(2);
-        return bucketName;
-    }
-    
-    public static void deleteBucket(String bucketName) {
-        abortAllMultipartUploads(defaultClient, bucketName);
-        deleteBucketWithObjects(defaultClient, bucketName);
-        abortAllMultipartUploads(secondClient, bucketName);
-        deleteBucketWithObjects(secondClient, bucketName);
-    }
-    
+
     protected static void deleteBucketWithObjects(OSSClient client, String bucketName) {
         if (!client.doesBucketExist(bucketName)) {
             return;
@@ -135,18 +93,18 @@ public class TestBase {
             if (total % DELETE_OBJECTS_ONETIME_LIMIT != 0) {
                 opLoops++;
             }
-            
-            List<String> objectsToDel = null;
+
+            List<String> objectsToDel;
             for (int i = 0; i < opLoops; i++) {
                 int fromIndex = i * DELETE_OBJECTS_ONETIME_LIMIT;
                 int len = 0;
                 if (total <= DELETE_OBJECTS_ONETIME_LIMIT) {
                     len = total;
                 } else {
-                    len = (i + 1 == opLoops) ? (total - fromIndex) : DELETE_OBJECTS_ONETIME_LIMIT;                    
+                    len = (i + 1 == opLoops) ? (total - fromIndex) : DELETE_OBJECTS_ONETIME_LIMIT;
                 }
                 objectsToDel = allObjects.subList(fromIndex, fromIndex + len);
-                
+
                 DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucketName);
                 deleteObjectsRequest.setEncodingType(DEFAULT_ENCODING_TYPE);
                 deleteObjectsRequest.setKeys(objectsToDel);
@@ -155,22 +113,22 @@ public class TestBase {
         }
         client.deleteBucket(bucketName);
     }
-    
-    protected static void abortAllMultipartUploads(OSSClient client, String bucketName) {        
+
+    protected static void abortAllMultipartUploads(OSSClient client, String bucketName) {
         if (!client.doesBucketExist(bucketName)) {
             return;
         }
-        
+
         String keyMarker = null;
         String uploadIdMarker = null;
-        ListMultipartUploadsRequest listMultipartUploadsRequest = null;
-        MultipartUploadListing multipartUploadListing = null;
-        List<MultipartUpload> multipartUploads = null;
+        ListMultipartUploadsRequest listMultipartUploadsRequest;
+        MultipartUploadListing multipartUploadListing;
+        List<MultipartUpload> multipartUploads;
         do {
             listMultipartUploadsRequest = new ListMultipartUploadsRequest(bucketName);
             listMultipartUploadsRequest.setKeyMarker(keyMarker);
             listMultipartUploadsRequest.setUploadIdMarker(uploadIdMarker);
-            
+
             multipartUploadListing = client.listMultipartUploads(listMultipartUploadsRequest);
             multipartUploads = multipartUploadListing.getMultipartUploads();
             for (MultipartUpload mu : multipartUploads) {
@@ -178,19 +136,19 @@ public class TestBase {
                 String uploadId = mu.getUploadId();
                 client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId));
             }
-            
+
             keyMarker = multipartUploadListing.getKeyMarker();
             uploadIdMarker = multipartUploadListing.getUploadIdMarker();
         } while (multipartUploadListing != null && multipartUploadListing.isTruncated());
     }
-    
+
     protected static List<String> listAllObjects(OSSClient client, String bucketName) {
         List<String> objs = new ArrayList<String>();
-        ObjectListing objectListing = null;
+        ObjectListing objectListing;
         String nextMarker = null;
-        
+
         do {
-            ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName, null, nextMarker, null, 
+            ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName, null, nextMarker, null,
                     DELETE_OBJECTS_ONETIME_LIMIT);
             listObjectsRequest.setEncodingType(DEFAULT_ENCODING_TYPE);
             objectListing = client.listObjects(listObjectsRequest);
@@ -199,7 +157,7 @@ public class TestBase {
             } else {
                 nextMarker = objectListing.getNextMarker();
             }
-            
+
             List<OSSObjectSummary> sums = objectListing.getObjectSummaries();
             for (OSSObjectSummary s : sums) {
                 if (DEFAULT_ENCODING_TYPE.equals(objectListing.getEncodingType())) {
@@ -209,53 +167,7 @@ public class TestBase {
                 }
             }
         } while (objectListing.isTruncated());
-        
+
         return objs;
     }
-    
-    protected static List<String> listAllBuckets(OSSClient client, String bucketPrefix) {
-        List<String> bkts = new ArrayList<String>();
-        String nextMarker = null;
-        BucketList bucketList = null;
-        
-        do {
-            ListBucketsRequest listBucketsRequest = new ListBucketsRequest(bucketPrefix, nextMarker, 
-                    ListBucketsRequest.MAX_RETURNED_KEYS);
-            bucketList = client.listBuckets(listBucketsRequest);
-            nextMarker = bucketList.getNextMarker();
-            for (Bucket b : bucketList.getBucketList()) {
-                bkts.add(b.getName());
-            }
-        } while (bucketList.isTruncated());
-        
-        return bkts;
-    }
-    
-    protected static void cleanUpAllBuckets(OSSClient client, String bucketPrefix) {
-        List<String> bkts = listAllBuckets(client, bucketPrefix);
-        for (String b : bkts) {
-            abortAllMultipartUploads(client, b);
-            deleteBucketWithObjects(client, b);
-        }
-    }
-    
-    public static void restoreDefaultCredentials() {
-        getDefaultClient().switchCredentials(defaultCreds);
-    }
-    
-    public static void restoreDefaultEndpoint() {
-        getDefaultClient().setEndpoint(DEFAULT_ENDPOINT);
-    }
-    
-    public static void cleanUp() {
-        if (defaultClient != null) {
-            defaultClient.shutdown();
-            defaultClient = null;
-        }
-        if (secondClient != null) {
-            secondClient.shutdown();
-            secondClient = null;
-        }
-    }
 }
-

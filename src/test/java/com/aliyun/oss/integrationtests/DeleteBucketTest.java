@@ -39,11 +39,11 @@ public class DeleteBucketTest extends TestBase {
 
     @Test
     public void testDeleteExistingBucket() {
-        final String bucketName = "delete-existing-bucket";
+        final String bucketName = getBucketName("delete-existing-bucket");
         
         try {
-            secondClient.createBucket(bucketName);
-            secondClient.deleteBucket(bucketName);
+            client.createBucket(bucketName);
+            client.deleteBucket(bucketName);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }
@@ -51,10 +51,10 @@ public class DeleteBucketTest extends TestBase {
 
     @Test
     public void testDeleteNonexistentBucket() {
-        final String bucketName = "delete-nonexistent-bucket";
+        final String bucketName = getBucketName("delete-nonexistent-bucket");
         
         try {
-            secondClient.deleteBucket(bucketName);
+            client.deleteBucket(bucketName);
             Assert.fail("Delete bucket should not be successful.");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.NO_SUCH_BUCKET, e.getErrorCode());
@@ -64,25 +64,25 @@ public class DeleteBucketTest extends TestBase {
     
     @Test
     public void testDeleteNonemptyBucket() {
-        final String bucketName = "delete-nonempty-bucket";
+        final String bucketName = getBucketName("delete-nonempty-bucket");
         final String key = "delete-nonempty-bucket-key";
         
         try {
-            secondClient.createBucket(bucketName);
+            client.createBucket(bucketName);
             
             List<String> keys = new ArrayList<String>();
             keys.add(key);
-            if (!batchPutObject(secondClient, bucketName, keys)) {
+            if (!batchPutObject(client, bucketName, keys)) {
                 Assert.fail("batch put object failed");
             }
             
-            secondClient.deleteBucket(bucketName);
+            client.deleteBucket(bucketName);
             Assert.fail("Delete bucket should not be successful.");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.BUCKET_NOT_EMPTY, e.getErrorCode());
             Assert.assertTrue(e.getMessage().startsWith(BUCKET_NOT_EMPTY_ERR));
         } finally {
-            deleteBucketWithObjects(secondClient, bucketName);
+            tryDeleteBucket(bucketName);
         }
     }
     
@@ -91,7 +91,7 @@ public class DeleteBucketTest extends TestBase {
         final String bucketWithoutOwnership = "oss";
         
         try {
-            secondClient.deleteBucket(bucketWithoutOwnership);
+            client.deleteBucket(bucketWithoutOwnership);
             Assert.fail("Delete bucket should not be successful.");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.ACCESS_DENIED, e.getErrorCode());

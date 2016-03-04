@@ -19,7 +19,6 @@
 
 package com.aliyun.oss.integrationtests;
 
-import static com.aliyun.oss.integrationtests.TestConfig.STS_USER;
 import static com.aliyun.oss.integrationtests.TestConstants.SECURITY_TOKEN_ACCESS_DENIED_ERR;
 import static com.aliyun.oss.integrationtests.TestUtils.createSessionClient;
 import static com.aliyun.oss.integrationtests.TestUtils.genFixedLengthInputStream;
@@ -67,6 +66,7 @@ import com.aliyun.oss.model.UploadPartResult;
 public class SecurityTokenTest {
     
     private static final String DUMMY_SUFFIX = "xyz";
+    private static final String STS_USER = "sts";
 
     @Test
     public void testBucketOperationsWithToken() {

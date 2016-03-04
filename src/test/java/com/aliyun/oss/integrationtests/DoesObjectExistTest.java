@@ -44,20 +44,20 @@ public class DoesObjectExistTest extends TestBase {
         final String existingKey = "existing-bucket-and-key";
         existingKeys.add(existingKey);
         
-        if (!batchPutObject(secondClient, bucketName, existingKeys)) {
+        if (!batchPutObject(client, bucketName, existingKeys)) {
             Assert.fail("batch put object failed");
         }
         
         try {
-            boolean exist = secondClient.doesObjectExist(bucketName, existingKey);
+            boolean exist = client.doesObjectExist(bucketName, existingKey);
             Assert.assertTrue(exist);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }
         
-        // Test another overrided interface
+        // Test another override interface
         try {
-            boolean exist = secondClient.doesObjectExist(new HeadObjectRequest(bucketName, existingKey));
+            boolean exist = client.doesObjectExist(new HeadObjectRequest(bucketName, existingKey));
             Assert.assertTrue(exist);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
@@ -69,7 +69,7 @@ public class DoesObjectExistTest extends TestBase {
         final String nonexistentKey = "existing-bucket-and-nonexistent-key";
         
         try {
-            boolean exist = secondClient.doesObjectExist(bucketName, nonexistentKey);
+            boolean exist = client.doesObjectExist(bucketName, nonexistentKey);
             Assert.assertFalse(exist);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
@@ -82,7 +82,7 @@ public class DoesObjectExistTest extends TestBase {
         final String nonexistentKey = "nonexistent-bucket-and-key";
         
         try {
-            boolean exist = secondClient.doesObjectExist(nonexistentBucketName, nonexistentKey);
+            boolean exist = client.doesObjectExist(nonexistentBucketName, nonexistentKey);
             Assert.assertFalse(exist);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
@@ -97,7 +97,7 @@ public class DoesObjectExistTest extends TestBase {
         final String existingKey = "object-with-misc-constraints";
         String eTag = null;
         try {
-            PutObjectResult result = secondClient.putObject(bucketName, existingKey, 
+            PutObjectResult result = client.putObject(bucketName, existingKey,
                     TestUtils.genFixedLengthInputStream(1024), null);
             eTag = result.getETag();
         } catch (Exception e) {
@@ -110,7 +110,7 @@ public class DoesObjectExistTest extends TestBase {
         matchingETagConstraints.add(eTag);
         headObjectRequest.setMatchingETagConstraints(matchingETagConstraints);
         try {
-            boolean exist = secondClient.doesObjectExist(headObjectRequest);
+            boolean exist = client.doesObjectExist(headObjectRequest);
             Assert.assertTrue(exist);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
@@ -122,7 +122,7 @@ public class DoesObjectExistTest extends TestBase {
         matchingETagConstraints.add("nonmatching-etag");
         headObjectRequest.setMatchingETagConstraints(matchingETagConstraints);
         try {
-            secondClient.doesObjectExist(headObjectRequest);
+            client.doesObjectExist(headObjectRequest);
             Assert.fail("Check object exist should not be successful.");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.PRECONDITION_FAILED, e.getErrorCode());
@@ -136,7 +136,7 @@ public class DoesObjectExistTest extends TestBase {
         nonmatchingETagConstraints.add("nonmatching-etag");
         headObjectRequest.setNonmatchingETagConstraints(nonmatchingETagConstraints);
         try {
-            boolean exist = secondClient.doesObjectExist(headObjectRequest);
+            boolean exist = client.doesObjectExist(headObjectRequest);
             Assert.assertTrue(exist);
         } catch (OSSException e) {
             Assert.fail(e.getMessage());
@@ -148,7 +148,7 @@ public class DoesObjectExistTest extends TestBase {
         nonmatchingETagConstraints.add(eTag);
         headObjectRequest.setNonmatchingETagConstraints(nonmatchingETagConstraints);
         try {
-            secondClient.doesObjectExist(headObjectRequest);
+            client.doesObjectExist(headObjectRequest);
             Assert.fail("Check object exist should not be successful.");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.NOT_MODIFIED, e.getErrorCode());
@@ -161,7 +161,7 @@ public class DoesObjectExistTest extends TestBase {
         Date unmodifiedSinceConstraint = new Date();
         headObjectRequest.setUnmodifiedSinceConstraint(unmodifiedSinceConstraint);
         try {
-            boolean exist = secondClient.doesObjectExist(headObjectRequest);
+            boolean exist = client.doesObjectExist(headObjectRequest);
             Assert.assertTrue(exist);
         } catch (OSSException e) {
             Assert.fail(e.getMessage());
@@ -172,7 +172,7 @@ public class DoesObjectExistTest extends TestBase {
         unmodifiedSinceConstraint = beforeModifiedTime;
         headObjectRequest.setUnmodifiedSinceConstraint(unmodifiedSinceConstraint);
         try {
-            secondClient.doesObjectExist(headObjectRequest);
+            client.doesObjectExist(headObjectRequest);
             Assert.fail("Check object exist should not be successful.");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.PRECONDITION_FAILED, e.getErrorCode());
@@ -185,7 +185,7 @@ public class DoesObjectExistTest extends TestBase {
         Date modifiedSinceConstraint = beforeModifiedTime;
         headObjectRequest.setModifiedSinceConstraint(modifiedSinceConstraint);
         try {
-            boolean exist = secondClient.doesObjectExist(headObjectRequest);
+            boolean exist = client.doesObjectExist(headObjectRequest);
             Assert.assertTrue(exist);
         } catch (OSSException e) {
             Assert.fail(e.getMessage());
@@ -196,7 +196,7 @@ public class DoesObjectExistTest extends TestBase {
         modifiedSinceConstraint = new Date();
         headObjectRequest.setModifiedSinceConstraint(modifiedSinceConstraint);
         try {
-            secondClient.doesObjectExist(headObjectRequest);
+            client.doesObjectExist(headObjectRequest);
             Assert.fail("Check object exist should not be successful.");
         } catch (OSSException e) {
             Assert.assertEquals(OSSErrorCode.NOT_MODIFIED, e.getErrorCode());

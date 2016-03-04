@@ -19,42 +19,21 @@
 
 package com.aliyun.oss.integrationtests;
 
-import static com.aliyun.oss.integrationtests.TestConfig.BEIJING_ENDPOINT;
-import static com.aliyun.oss.integrationtests.TestConstants.COPY_OBJECT_DIFF_LOCATION_ERR;
-import static com.aliyun.oss.integrationtests.TestConstants.INVALID_ENCRYPTION_ALGO_ERR;
-import static com.aliyun.oss.integrationtests.TestConstants.NOT_MODIFIED_ERR;
-import static com.aliyun.oss.integrationtests.TestConstants.NO_SUCH_BUCKET_ERR;
-import static com.aliyun.oss.integrationtests.TestConstants.NO_SUCH_KEY_ERR;
-import static com.aliyun.oss.internal.OSSConstants.DEFAULT_OBJECT_CONTENT_TYPE;
-import static com.aliyun.oss.model.LocationConstraint.OSS_CN_BEIJING;
-import static com.aliyun.oss.model.LocationConstraint.OSS_CN_HANGZHOU;
-import static com.aliyun.oss.integrationtests.TestUtils.waitForCacheExpiration;
-
-import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
+import com.aliyun.oss.model.*;
 import junit.framework.Assert;
-
-import org.junit.Ignore;
 import org.junit.Test;
 
-import com.aliyun.oss.OSSErrorCode;
-import com.aliyun.oss.OSSException;
-import com.aliyun.oss.model.CopyObjectRequest;
-import com.aliyun.oss.model.CopyObjectResult;
-import com.aliyun.oss.model.CreateBucketRequest;
-import com.aliyun.oss.model.OSSObject;
-import com.aliyun.oss.model.ObjectMetadata;
-import com.aliyun.oss.model.PutObjectResult;
+import java.io.ByteArrayInputStream;
+
+import static com.aliyun.oss.integrationtests.TestUtils.waitForCacheExpiration;
+import static com.aliyun.oss.internal.OSSConstants.DEFAULT_OBJECT_CONTENT_TYPE;
 
 public class CopyObjectTest extends TestBase {
     
     @Test
     public void testCopyExistingObject() {        
-        final String sourceBucket = "copy-existing-object-source-bucket";
-        final String targetBucket = "copy-existing-object-target-bucket";
+        final String sourceBucket = getBucketName("source");
+        final String targetBucket = getBucketName("target");
         final String sourceKey = "copy-existing-object-source-object";
         final String targetKey = "copy-existing-object-target-object";
         
@@ -65,8 +44,8 @@ public class CopyObjectTest extends TestBase {
         final String contentType = "application/txt";
         
         try {
-            secondClient.createBucket(sourceBucket);
-            secondClient.createBucket(targetBucket);
+            client.createBucket(sourceBucket);
+            client.createBucket(targetBucket);
             
             // Set source object different with target object and copy source bucket orignal metadata(default behavior).
             byte[] content = { 'A', 'l', 'i', 'y', 'u', 'n' };
@@ -75,15 +54,15 @@ public class CopyObjectTest extends TestBase {
             metadata.setContentType(DEFAULT_OBJECT_CONTENT_TYPE);
             metadata.addUserMetadata(userMetaKey0, userMetaValue0);
             
-            PutObjectResult putObjectResult = secondClient.putObject(sourceBucket, sourceKey, 
+            PutObjectResult putObjectResult = client.putObject(sourceBucket, sourceKey, 
                     new ByteArrayInputStream(content), metadata);
-            CopyObjectResult copyObjectResult = secondClient.copyObject(sourceBucket, sourceKey, 
+            CopyObjectResult copyObjectResult = client.copyObject(sourceBucket, sourceKey, 
                     targetBucket, targetKey);
             String sourceETag = putObjectResult.getETag();
             String targetETag = copyObjectResult.getETag();
             Assert.assertEquals(sourceETag, targetETag);
             
-            OSSObject ossObject = secondClient.getObject(targetBucket, targetKey);
+            OSSObject ossObject = client.getObject(targetBucket, targetKey);
             ObjectMetadata newObjectMetadata = ossObject.getObjectMetadata();
             Assert.assertEquals(DEFAULT_OBJECT_CONTENT_TYPE, newObjectMetadata.getContentType());
             Assert.assertEquals(userMetaValue0, newObjectMetadata.getUserMetadata().get(userMetaKey0));
@@ -98,10 +77,10 @@ public class CopyObjectTest extends TestBase {
             CopyObjectRequest copyObjectRequest = new CopyObjectRequest(sourceBucket, sourceKey,
                     sourceBucketAsTarget, sourceKeyAsTarget);
             copyObjectRequest.setNewObjectMetadata(newObjectMetadata);
-            copyObjectResult = secondClient.copyObject(copyObjectRequest);
+            copyObjectResult = client.copyObject(copyObjectRequest);
             Assert.assertEquals(sourceETag, copyObjectResult.getETag());
             
-            ossObject = secondClient.getObject(sourceBucketAsTarget, sourceKeyAsTarget);
+            ossObject = client.getObject(sourceBucketAsTarget, sourceKeyAsTarget);
             newObjectMetadata = ossObject.getObjectMetadata();
             Assert.assertEquals(contentType, newObjectMetadata.getContentType());
             Assert.assertEquals(userMetaValue1, newObjectMetadata.getUserMetadata().get(userMetaKey1));
@@ -109,10 +88,11 @@ public class CopyObjectTest extends TestBase {
             Assert.fail(e.getMessage());
         } finally {
             waitForCacheExpiration(5);
-            deleteBucketWithObjects(secondClient, sourceBucket);
-            deleteBucketWithObjects(secondClient, targetBucket);
+            deleteBucketWithObjects(client, sourceBucket);
+            deleteBucketWithObjects(client, targetBucket);
         }
     }
+    /*
     
     @Ignore
     public void testCopyNonexistentObject() {
@@ -126,12 +106,12 @@ public class CopyObjectTest extends TestBase {
         final String targetKey = "copy-nonexistent-object-target";
         
         try {
-            secondClient.createBucket(existingSourceBucket);
-            secondClient.createBucket(existingTargetBucket);
+            client.createBucket(existingSourceBucket);
+            client.createBucket(existingTargetBucket);
             
             // Try to copy object under non-existent source bucket
             try {
-                secondClient.copyObject(nonexistentSourceBucket, nonexistentSourceKey, existingTargetBucket, targetKey);
+                client.copyObject(nonexistentSourceBucket, nonexistentSourceKey, existingTargetBucket, targetKey);
                 Assert.fail("Copy object should not be successful");
             } catch (OSSException e) {
                 Assert.assertEquals(OSSErrorCode.NO_SUCH_BUCKET, e.getErrorCode());
@@ -140,7 +120,7 @@ public class CopyObjectTest extends TestBase {
             
             // Try to copy non-existent object under existing bucket
             try {
-                secondClient.copyObject(existingSourceBucket, nonexistentSourceKey, existingTargetBucket, targetKey);
+                client.copyObject(existingSourceBucket, nonexistentSourceKey, existingTargetBucket, targetKey);
                 Assert.fail("Copy object should not be successful");                
             } catch (OSSException e) {
                 Assert.assertEquals(OSSErrorCode.NO_SUCH_KEY, e.getErrorCode());
@@ -149,14 +129,14 @@ public class CopyObjectTest extends TestBase {
     
             try {
                 byte[] content = { 'A', 'l', 'i', 'y', 'u', 'n' };
-                secondClient.putObject(existingSourceBucket, existingSourceKey, new ByteArrayInputStream(content), null);
+                client.putObject(existingSourceBucket, existingSourceKey, new ByteArrayInputStream(content), null);
             } catch (Exception e) {
                 Assert.fail(e.getMessage());
             }
             
             // Try to copy existing object to non-existent target bucket
             try {
-                secondClient.copyObject(existingSourceBucket, existingSourceKey, nonexistentTargetBucket, targetKey);
+                client.copyObject(existingSourceBucket, existingSourceKey, nonexistentTargetBucket, targetKey);
                 Assert.fail("Copy object should not be successful");
             } catch (OSSException e) {
                 Assert.assertEquals(OSSErrorCode.NO_SUCH_BUCKET, e.getErrorCode());
@@ -166,8 +146,8 @@ public class CopyObjectTest extends TestBase {
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         } finally {
-            deleteBucketWithObjects(secondClient, existingSourceBucket);
-            deleteBucketWithObjects(secondClient, existingTargetBucket);
+            deleteBucketWithObjects(client, existingSourceBucket);
+            deleteBucketWithObjects(client, existingTargetBucket);
         }
     }
     
@@ -182,24 +162,24 @@ public class CopyObjectTest extends TestBase {
             // Location of source bucket different with target bucket
             CreateBucketRequest createSourceBucketRequest = new CreateBucketRequest(sourceBucket);
             createSourceBucketRequest.setLocationConstraint(OSS_CN_HANGZHOU);
-            defaultClient.createBucket(createSourceBucketRequest);
+            client.createBucket(createSourceBucketRequest);
             
-            defaultClient.setEndpoint(BEIJING_ENDPOINT);
+            client.setEndpoint(BEIJING_ENDPOINT);
             CreateBucketRequest createTargetBucketRequest = new CreateBucketRequest(targetBucket);
             createTargetBucketRequest.setLocationConstraint(OSS_CN_BEIJING);
-            defaultClient.createBucket(createTargetBucketRequest);
+            client.createBucket(createTargetBucketRequest);
             restoreDefaultEndpoint();
             
             try {
                 byte[] content = { 'A', 'l', 'i', 'y', 'u', 'n' };
-                defaultClient.putObject(sourceBucket, sourceKey, new ByteArrayInputStream(content), null);
+                client.putObject(sourceBucket, sourceKey, new ByteArrayInputStream(content), null);
             } catch (Exception e) {
                 Assert.fail(e.getMessage());
             }
             
             try {
-                defaultClient.setEndpoint(BEIJING_ENDPOINT);
-                defaultClient.copyObject(sourceBucket, sourceKey, targetBucket, targetKey);
+                client.setEndpoint(BEIJING_ENDPOINT);
+                client.copyObject(sourceBucket, sourceKey, targetBucket, targetKey);
                 Assert.fail("Copy object should not be successful");
             } catch (OSSException e) {
                 Assert.assertEquals(OSSErrorCode.ACCESS_DENIED, e.getErrorCode());
@@ -211,9 +191,9 @@ public class CopyObjectTest extends TestBase {
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         } finally {
-            deleteBucketWithObjects(defaultClient, sourceBucket);
-            defaultClient.setEndpoint(BEIJING_ENDPOINT);
-            deleteBucketWithObjects(defaultClient, targetBucket);
+            deleteBucketWithObjects(client, sourceBucket);
+            client.setEndpoint(BEIJING_ENDPOINT);
+            deleteBucketWithObjects(client, targetBucket);
             restoreDefaultEndpoint();
         }
     }
@@ -442,4 +422,5 @@ public class CopyObjectTest extends TestBase {
             deleteBucketWithObjects(secondClient, targetBucket);
         }
     }
+    */
 }

@@ -79,7 +79,7 @@ public class PutObjectTest extends TestBase {
                     @Override
                     public void run() {
                         try {
-                            secondClient.putObject(bucketName, buildObjectKey(keyPrefix, seqNum), 
+                            client.putObject(bucketName, buildObjectKey(keyPrefix, seqNum),
                                     new File(filePath));
                             completedCount.incrementAndGet();
                         } catch (Exception ex) {
@@ -117,7 +117,7 @@ public class PutObjectTest extends TestBase {
                     @Override
                     public void run() {
                         try {
-                            secondClient.putObject(bucketName, buildObjectKey(keyPrefix, seqNum), 
+                            client.putObject(bucketName, buildObjectKey(keyPrefix, seqNum),
                                     new File(filePath));
                             completedCount.incrementAndGet();
                         } catch (Exception e) {
@@ -155,7 +155,7 @@ public class PutObjectTest extends TestBase {
                     @Override
                     public void run() {
                         try {
-                            secondClient.putObject(bucketName, buildObjectKey(keyPrefix, seqNum), 
+                            client.putObject(bucketName, buildObjectKey(keyPrefix, seqNum),
                                     new File(filePath));
                             completedCount.incrementAndGet();
                         } catch (Exception e) {
@@ -195,7 +195,7 @@ public class PutObjectTest extends TestBase {
                     @Override
                     public void run() {
                         try {
-                            secondClient.putObject(bucketName, buildObjectKey(keyPrefix, seqNum), 
+                            client.putObject(bucketName, buildObjectKey(keyPrefix, seqNum),
                                     randomFile);
                             completedCount.incrementAndGet();
                         } catch (Exception ex) {
@@ -223,14 +223,14 @@ public class PutObjectTest extends TestBase {
         final String filePath = genFixedLengthFile(128 * 1024); //128KB
         
         try {
-            secondClient.putObject(bucketName, keyWithCLRF, new File(filePath));
-            OSSObject o = secondClient.getObject(bucketName, keyWithCLRF);
+            client.putObject(bucketName, keyWithCLRF, new File(filePath));
+            OSSObject o = client.getObject(bucketName, keyWithCLRF);
             Assert.assertEquals(keyWithCLRF, o.getKey());
         } catch (OSSException ex) {
             Assert.assertEquals(OSSErrorCode.INVALID_OBJECT_NAME, ex.getErrorCode());
             Assert.assertTrue(ex.getMessage().startsWith(INVALID_OBJECT_NAME_ERR));
         } finally {
-            secondClient.deleteObject(bucketName, keyWithCLRF);
+            client.deleteObject(bucketName, keyWithCLRF);
             removeFile(filePath);
         }
     }
@@ -242,7 +242,7 @@ public class PutObjectTest extends TestBase {
         // Try to put object into non-existent bucket
         final String nonexistentBucket = "nonexistent-bucket";
         try {
-            secondClient.putObject(nonexistentBucket, key, genFixedLengthInputStream(128));
+            client.putObject(nonexistentBucket, key, genFixedLengthInputStream(128));
             Assert.fail("Put object should not be successful");
         } catch (OSSException ex) {
             Assert.assertEquals(OSSErrorCode.NO_SUCH_BUCKET, ex.getErrorCode());
@@ -252,7 +252,7 @@ public class PutObjectTest extends TestBase {
         // Try to put object into bucket without ownership
         final String bucketWithoutOwnership = "oss";
         try {
-            secondClient.putObject(bucketWithoutOwnership, key, genFixedLengthInputStream(128));
+            client.putObject(bucketWithoutOwnership, key, genFixedLengthInputStream(128));
             Assert.fail("Put object should not be successful");
         } catch (OSSException ex) {
             Assert.assertEquals(OSSErrorCode.ACCESS_DENIED, ex.getErrorCode());
@@ -264,7 +264,7 @@ public class PutObjectTest extends TestBase {
         try {
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentLength(contentLength);
-            secondClient.putObject(bucketName, key, genFixedLengthInputStream(128), metadata);
+            client.putObject(bucketName, key, genFixedLengthInputStream(128), metadata);
             Assert.fail("Put object should not be successful");
         } catch (Exception ex) {
             Assert.assertTrue(ex instanceof IllegalArgumentException);
@@ -275,7 +275,7 @@ public class PutObjectTest extends TestBase {
         try {
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setServerSideEncryption(invalidServerSideEncryption);
-            secondClient.putObject(bucketName, key, genFixedLengthInputStream(128), metadata);
+            client.putObject(bucketName, key, genFixedLengthInputStream(128), metadata);
             Assert.fail("Put object should not be successful");
         } catch (OSSException ex) {
             Assert.assertEquals(OSSErrorCode.INVALID_ENCRYPTION_ALGORITHM_ERROR, ex.getErrorCode());
@@ -287,7 +287,7 @@ public class PutObjectTest extends TestBase {
         try {
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentMD5(invalidContentMD5);
-            secondClient.putObject(bucketName, key, genFixedLengthInputStream(128), metadata);
+            client.putObject(bucketName, key, genFixedLengthInputStream(128), metadata);
             Assert.fail("Put object should not be successful");
         } catch (OSSException ex) {
             Assert.assertEquals(OSSErrorCode.INVALID_DIGEST, ex.getErrorCode());
@@ -303,8 +303,8 @@ public class PutObjectTest extends TestBase {
         InputStream instream = null;
         try {
             instream = genFixedLengthInputStream(instreamLength);
-            secondClient.putObject(bucketName, key, instream, null);
-            OSSObject o = secondClient.getObject(bucketName, key);
+            client.putObject(bucketName, key, instream, null);
+            OSSObject o = client.getObject(bucketName, key);
             Assert.assertEquals(key, o.getKey());
             Assert.assertEquals(instreamLength, o.getObjectMetadata().getContentLength());
         } catch (Exception ex) {
@@ -321,19 +321,19 @@ public class PutObjectTest extends TestBase {
         try {
             // Override 1
             instream = genFixedLengthInputStream(instreamLength);
-            secondClient.putObject(bucketName, key, instream);
-            OSSObject o = secondClient.getObject(bucketName, key);
+            client.putObject(bucketName, key, instream);
+            OSSObject o = client.getObject(bucketName, key);
             Assert.assertEquals(key, o.getKey());
             Assert.assertEquals(instreamLength, o.getObjectMetadata().getContentLength());
             
             // Override 2
             final String filePath = genFixedLengthFile(instreamLength);
-            secondClient.putObject(bucketName, key, new File(filePath));
+            client.putObject(bucketName, key, new File(filePath));
             Assert.assertEquals(instreamLength, new File(filePath).length());
             
             // Override 3
-            secondClient.putObject(new PutObjectRequest(bucketName, key, new File(filePath)));
-            o = secondClient.getObject(bucketName, key);
+            client.putObject(new PutObjectRequest(bucketName, key, new File(filePath)));
+            o = client.getObject(bucketName, key);
             Assert.assertEquals(key, o.getKey());
             Assert.assertEquals(instreamLength, o.getObjectMetadata().getContentLength());
         } catch (Exception ex) {
@@ -354,7 +354,7 @@ public class PutObjectTest extends TestBase {
         request.setExpiration(expiration);
         request.setContentType(DEFAULT_OBJECT_CONTENT_TYPE);
         request.addUserMetadata(metaKey0, metaValue0);
-        URL signedUrl = secondClient.generatePresignedUrl(request);
+        URL signedUrl = client.generatePresignedUrl(request);
                 
         Map<String, String> requestHeaders = new HashMap<String, String>();
         requestHeaders.put(HttpHeaders.CONTENT_TYPE, DEFAULT_OBJECT_CONTENT_TYPE);
@@ -365,8 +365,8 @@ public class PutObjectTest extends TestBase {
         try {
             instream = genFixedLengthInputStream(inputStreamLength);
             // Using url signature & chunked encoding to upload specified inputstream.
-            secondClient.putObject(signedUrl, instream, -1, requestHeaders, true);
-            OSSObject o = secondClient.getObject(bucketName, key);
+            client.putObject(signedUrl, instream, -1, requestHeaders, true);
+            OSSObject o = client.getObject(bucketName, key);
             Assert.assertEquals(key, o.getKey());
             Assert.assertEquals(inputStreamLength, o.getObjectMetadata().getContentLength());
             
@@ -381,8 +381,8 @@ public class PutObjectTest extends TestBase {
         try {
             instream = genFixedLengthInputStream(inputStreamLength);
             // Using url signature encoding to upload specified inputstream.
-            secondClient.putObject(signedUrl, instream, -1, requestHeaders);
-            OSSObject o = secondClient.getObject(bucketName, key);
+            client.putObject(signedUrl, instream, -1, requestHeaders);
+            OSSObject o = client.getObject(bucketName, key);
             Assert.assertEquals(key, o.getKey());
             Assert.assertEquals(inputStreamLength, o.getObjectMetadata().getContentLength());
             
@@ -397,8 +397,8 @@ public class PutObjectTest extends TestBase {
         String filePath = genFixedLengthFile(inputStreamLength);
         try {
             // Using url signature encoding to upload specified inputstream.
-            secondClient.putObject(signedUrl, filePath, requestHeaders);
-            OSSObject o = secondClient.getObject(bucketName, key);
+            client.putObject(signedUrl, filePath, requestHeaders);
+            OSSObject o = client.getObject(bucketName, key);
             Assert.assertEquals(key, o.getKey());
             Assert.assertEquals(inputStreamLength, o.getObjectMetadata().getContentLength());
             
@@ -415,8 +415,8 @@ public class PutObjectTest extends TestBase {
         filePath = genFixedLengthFile(inputStreamLength);
         try {
             // Using url signature encoding to upload specified inputstream.
-            secondClient.putObject(signedUrl, filePath, requestHeaders, true);
-            OSSObject o = secondClient.getObject(bucketName, key);
+            client.putObject(signedUrl, filePath, requestHeaders, true);
+            OSSObject o = client.getObject(bucketName, key);
             Assert.assertEquals(key, o.getKey());
             Assert.assertEquals(inputStreamLength, o.getObjectMetadata().getContentLength());
             
@@ -439,15 +439,15 @@ public class PutObjectTest extends TestBase {
         InputStream instream = null;
         try {
             instream = genFixedLengthInputStream(instreamLength);
-            secondClient.putObject(bucketName, keyWithSuffix, instream);
-            OSSObject o = secondClient.getObject(bucketName, keyWithSuffix);
+            client.putObject(bucketName, keyWithSuffix, instream);
+            OSSObject o = client.getObject(bucketName, keyWithSuffix);
             Assert.assertEquals(keyWithSuffix, o.getKey());
             Assert.assertEquals(Mimetypes.getInstance().getMimetype(keyWithSuffix), 
                     o.getObjectMetadata().getContentType());
             
             instream = genFixedLengthInputStream(instreamLength);
-            secondClient.putObject(bucketName, keyWithoutSuffix, instream);
-            o = secondClient.getObject(bucketName, keyWithoutSuffix);
+            client.putObject(bucketName, keyWithoutSuffix, instream);
+            o = client.getObject(bucketName, keyWithoutSuffix);
             Assert.assertEquals(keyWithoutSuffix, o.getKey());
             Assert.assertEquals(Mimetypes.getInstance().getMimetype(keyWithoutSuffix), 
                     o.getObjectMetadata().getContentType());
@@ -474,8 +474,8 @@ public class PutObjectTest extends TestBase {
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType(contentTypeWithBlank);
             metadata.addUserMetadata(metaKey, metaVal);
-            secondClient.putObject(bucketName, key, instream, metadata);
-            OSSObject o = secondClient.getObject(bucketName, key);
+            client.putObject(bucketName, key, instream, metadata);
+            OSSObject o = client.getObject(bucketName, key);
             Assert.assertEquals(contentTypeWithBlank.trim(), o.getObjectMetadata().getContentType());
         } catch (Exception e) {
             Assert.fail(e.getMessage());
