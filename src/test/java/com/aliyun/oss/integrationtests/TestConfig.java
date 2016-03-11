@@ -24,16 +24,16 @@ import java.io.File;
 public final class TestConfig {
 
     // OSS config
-    public static final String OSS_TEST_ENDPOINT = "http://oss-test.aliyun-inc.com";
-    public static final String OSS_TEST_REGION = "oss-cn-hangzhou";
-    public static final String OSS_TEST_ACCESS_KEY_ID = "vzavyumwku51cq0";
-    public static final String OSS_TEST_ACCESS_KEY_SECRET = "a3Q3Mzhrcngzc3lsandmYmd3eXY";
-    public static final String OSS_TEST_BUCKET = "java-sdk-test";
+    public static final String OSS_TEST_ENDPOINT = "<endpoint>";
+    public static final String OSS_TEST_REGION = "<region>";
+    public static final String OSS_TEST_ACCESS_KEY_ID = "<access key id>";
+    public static final String OSS_TEST_ACCESS_KEY_SECRET = "<access key secret>";
+    public static final String OSS_TEST_BUCKET = "<bucket name>";
 
     // STS config
-    public static final String STS_TEST_ACCESS_KEY_ID = "vzavyumwku51cq0";
-    public static final String STS_TEST_ACCESS_KEY_SECRET = "a3Q3Mzhrcngzc3lsandmYmd3eXY";
-    public static final String STS_TEST_ENDPOINT = "a3Q3Mzhrcngzc3lsandmYmd3eXY";
-    public static final String STS_TEST_ROLE = "a3Q3Mzhrcngzc3lsandmYmd3eXY";
-    public static final String STS_TEST_BUCKET = "a3Q3Mzhrcngzc3lsandmYmd3eXY";
+    public static final String STS_TEST_ACCESS_KEY_ID = "<access key id>";
+    public static final String STS_TEST_ACCESS_KEY_SECRET = "<access key secret>";
+    public static final String STS_TEST_ENDPOINT = "<endpoint>";
+    public static final String STS_TEST_ROLE = "<role arn>";
+    public static final String STS_TEST_BUCKET = "<bucket name>";
 }
