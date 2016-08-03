@@ -26,6 +26,7 @@ import static com.aliyun.oss.internal.OSSUtils.determineResourcePath;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -57,6 +58,11 @@ public class OSSRequestMessageBuilder {
     private boolean useChunkEncoding = false;
     
     private WebServiceRequest originalRequest;
+    
+    /**
+     * 和GMT的偏移量,默认是0,单位: 秒
+     */
+    public static  int GMTOffset = 0;
     
     public OSSRequestMessageBuilder(ServiceClient innerClient) {
         this.innerClient = innerClient;
@@ -167,8 +173,16 @@ public class OSSRequestMessageBuilder {
     }
 
     public RequestMessage build() {       
+        Date date = new Date();
         Map<String, String> sentHeaders = new HashMap<String, String>(this.headers);
-        sentHeaders.put(OSSHeaders.DATE, DateUtil.formatRfc822Date(new Date()));        
+        if(GMTOffset != 0)
+        {
+            Calendar correct = Calendar.getInstance();
+            correct.setTime(date);
+            correct.add(Calendar.SECOND, GMTOffset);
+            date = correct.getTime();
+        }
+        sentHeaders.put(OSSHeaders.DATE, DateUtil.formatRfc822Date(date));        
         Map<String, String> sentParameters = new LinkedHashMap<String, String>(this.parameters);
         
         RequestMessage request = new RequestMessage(this.originalRequest);
@@ -184,5 +198,5 @@ public class OSSRequestMessageBuilder {
         
         return request;
     }
-   
+    
 }

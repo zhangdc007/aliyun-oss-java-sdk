@@ -30,6 +30,8 @@ import com.aliyun.oss.common.auth.Credentials;
 import com.aliyun.oss.common.comm.ResponseMessage;
 import com.aliyun.oss.model.AbortMultipartUploadRequest;
 import com.aliyun.oss.model.AccessControlList;
+import com.aliyun.oss.model.AddBucketCnameRequest;
+import com.aliyun.oss.model.AddBucketReplicationRequest;
 import com.aliyun.oss.model.AppendObjectRequest;
 import com.aliyun.oss.model.AppendObjectResult;
 import com.aliyun.oss.model.Bucket;
@@ -61,15 +63,6 @@ import com.aliyun.oss.model.GenerateVodPlaylistRequest;
 import com.aliyun.oss.model.GenericRequest;
 import com.aliyun.oss.model.GetBucketImageResult;
 import com.aliyun.oss.model.GetBucketReplicationProgressRequest;
-import com.aliyun.oss.model.ListLiveChannelsRequest;
-import com.aliyun.oss.model.LiveChannel;
-import com.aliyun.oss.model.LiveChannelGenericRequest;
-import com.aliyun.oss.model.LiveChannelInfo;
-import com.aliyun.oss.model.LiveChannelListing;
-import com.aliyun.oss.model.LiveChannelStat;
-import com.aliyun.oss.model.LiveChannelStatus;
-import com.aliyun.oss.model.LiveRecord;
-import com.aliyun.oss.model.ReplicationRule;
 import com.aliyun.oss.model.GetImageStyleResult;
 import com.aliyun.oss.model.GetObjectRequest;
 import com.aliyun.oss.model.HeadObjectRequest;
@@ -77,9 +70,17 @@ import com.aliyun.oss.model.InitiateMultipartUploadRequest;
 import com.aliyun.oss.model.InitiateMultipartUploadResult;
 import com.aliyun.oss.model.LifecycleRule;
 import com.aliyun.oss.model.ListBucketsRequest;
+import com.aliyun.oss.model.ListLiveChannelsRequest;
 import com.aliyun.oss.model.ListMultipartUploadsRequest;
 import com.aliyun.oss.model.ListObjectsRequest;
 import com.aliyun.oss.model.ListPartsRequest;
+import com.aliyun.oss.model.LiveChannel;
+import com.aliyun.oss.model.LiveChannelGenericRequest;
+import com.aliyun.oss.model.LiveChannelInfo;
+import com.aliyun.oss.model.LiveChannelListing;
+import com.aliyun.oss.model.LiveChannelStat;
+import com.aliyun.oss.model.LiveChannelStatus;
+import com.aliyun.oss.model.LiveRecord;
 import com.aliyun.oss.model.MultipartUploadListing;
 import com.aliyun.oss.model.OSSObject;
 import com.aliyun.oss.model.ObjectAcl;
@@ -92,25 +93,24 @@ import com.aliyun.oss.model.PutBucketImageRequest;
 import com.aliyun.oss.model.PutImageStyleRequest;
 import com.aliyun.oss.model.PutObjectRequest;
 import com.aliyun.oss.model.PutObjectResult;
+import com.aliyun.oss.model.ReplicationRule;
 import com.aliyun.oss.model.SetBucketAclRequest;
 import com.aliyun.oss.model.SetBucketCORSRequest;
-import com.aliyun.oss.model.AddBucketCnameRequest;
-import com.aliyun.oss.model.SetBucketProcessRequest;
-import com.aliyun.oss.model.SetBucketRefererRequest;
-import com.aliyun.oss.model.AddBucketReplicationRequest;
-import com.aliyun.oss.model.SetBucketStorageCapacityRequest;
-import com.aliyun.oss.model.SetBucketTaggingRequest;
-import com.aliyun.oss.model.SetLiveChannelRequest;
-import com.aliyun.oss.model.SetObjectAclRequest;
-import com.aliyun.oss.model.SimplifiedObjectMeta;
-import com.aliyun.oss.model.TagSet;
-import com.aliyun.oss.model.Style;
-import com.aliyun.oss.model.UploadFileRequest;
-import com.aliyun.oss.model.UploadFileResult;
 import com.aliyun.oss.model.SetBucketCORSRequest.CORSRule;
 import com.aliyun.oss.model.SetBucketLifecycleRequest;
 import com.aliyun.oss.model.SetBucketLoggingRequest;
+import com.aliyun.oss.model.SetBucketProcessRequest;
+import com.aliyun.oss.model.SetBucketRefererRequest;
+import com.aliyun.oss.model.SetBucketStorageCapacityRequest;
+import com.aliyun.oss.model.SetBucketTaggingRequest;
 import com.aliyun.oss.model.SetBucketWebsiteRequest;
+import com.aliyun.oss.model.SetLiveChannelRequest;
+import com.aliyun.oss.model.SetObjectAclRequest;
+import com.aliyun.oss.model.SimplifiedObjectMeta;
+import com.aliyun.oss.model.Style;
+import com.aliyun.oss.model.TagSet;
+import com.aliyun.oss.model.UploadFileRequest;
+import com.aliyun.oss.model.UploadFileResult;
 import com.aliyun.oss.model.UploadPartCopyRequest;
 import com.aliyun.oss.model.UploadPartCopyResult;
 import com.aliyun.oss.model.UploadPartRequest;
@@ -1671,5 +1671,12 @@ public interface OSS {
      */
     public String generateRtmpUri(GenerateRtmpUriRequest generatePushflowUrlRequest) 
             throws OSSException, ClientException;
+    
+    /**
+     * 本地时间和GMT时间的偏移量，单位:秒
+     * 
+     * @param GMTOffset
+     */
+    public void setGMTOffset(int GMTOffset);
 
 }

@@ -69,6 +69,7 @@ import com.aliyun.oss.internal.OSSDownloadOperation;
 import com.aliyun.oss.internal.OSSHeaders;
 import com.aliyun.oss.internal.OSSMultipartOperation;
 import com.aliyun.oss.internal.OSSObjectOperation;
+import com.aliyun.oss.internal.OSSRequestMessageBuilder;
 import com.aliyun.oss.internal.OSSUploadOperation;
 import com.aliyun.oss.internal.OSSUtils;
 import com.aliyun.oss.internal.SignUtils;
@@ -1414,6 +1415,11 @@ public class OSSClient implements OSS {
         } catch(Exception e) {
             logException("shutdown throw exception: ", e);
         }
+    }
+
+    @Override
+    public void setGMTOffset(int GMTOffset) {
+        OSSRequestMessageBuilder.GMTOffset = GMTOffset;
     }
     
 }
