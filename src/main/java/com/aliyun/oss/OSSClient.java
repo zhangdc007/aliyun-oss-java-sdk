@@ -1421,5 +1421,12 @@ public class OSSClient implements OSS {
     public void setGMTOffset(int GMTOffset) {
         OSSRequestMessageBuilder.GMTOffset = GMTOffset;
     }
+
+    @Override
+    public void reclaimGMT(Date GMTDate) {
+        Date local = new Date();
+        Long offset = GMTDate.getTime() - local.getTime();
+        OSSRequestMessageBuilder.GMTOffset = (int) (offset/1000);
+    }
     
 }

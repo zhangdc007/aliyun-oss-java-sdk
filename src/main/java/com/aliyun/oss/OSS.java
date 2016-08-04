@@ -1674,9 +1674,15 @@ public interface OSS {
     
     /**
      * 本地时间和GMT时间的偏移量，单位:秒
-     * 
+     * 该偏移量是
      * @param GMTOffset
      */
     public void setGMTOffset(int GMTOffset);
 
+    /**
+     *通过远程的GMT调整本地时间便宜偏移
+     * 
+     * @param GMTDate
+     */
+    public void reclaimGMT(Date GMTDate);
 }
